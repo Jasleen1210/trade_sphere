@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - TradeSphere</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/edit.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Edit Profile</h2>
+        <form id="editProfileForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" required>
+
+            <label for="username">Username:</label>
+            <input type="text" id="username" required>
+
+            <label for="bio">Bio:</label>
+            <textarea id="bio" rows="3"></textarea>
+
+            <label for="location">Location:</label>
+            <input type="text" id="location" required>
+
+            <div class="button-container">
+                <button type="submit">Save Changes</button>
+                <a href="{{ url_for('profile') }}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Get profile details from the frontend (profile.html)
+            document.getElementById('name').value = document.getElementById('profileName').textContent.trim();
+            document.getElementById('username').value = document.getElementById('userName').textContent.trim();
+            document.getElementById('bio').value = document.getElementById('profileBio').textContent.trim();
+            document.getElementById('location').value = document.getElementById('profileLocation').textContent.trim();
+    
+            // Submit form and send data to MongoDB
+            document.getElementById("editProfileForm").addEventListener("submit", function (event) {
+                event.preventDefault();
+    
+                const updatedData = {
+                    name: document.getElementById('name').value,
+                    username: document.getElementById('username').value,
+                    bio: document.getElementById('bio').value,
+                    location: document.getElementById('location').value
+                };
+    
+                fetch("/update_profile", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(updatedData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Profile updated successfully!");
+                        // Update profile details on frontend dynamically
+                        document.getElementById('profileName').textContent = updatedData.name;
+                        document.getElementById('userName').textContent = updatedData.username;
+                        document.getElementById('profileBio').textContent = updatedData.bio;
+                        document.getElementById('profileLocation').textContent = updatedData.location;
+    
+                        window.location.href = "/profile";  // Redirect back to profile page
+                    } else {
+                        alert("Error updating profile: " + data.error);
+                    }
+                })
+                .catch(error => console.error("Error updating profile:", error));
+            });
+        });
+    </script>
+    
+</body>
+</html>
+

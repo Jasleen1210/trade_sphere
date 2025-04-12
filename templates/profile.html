@@ -1,0 +1,406 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeSphere 1 - User Profile</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<style>
+    .orders-table tbody tr:hover {
+        background-color: #f1f1f1;
+        cursor: pointer;
+    }
+    .confirmmodal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        text-align: center;
+    }
+    .confirm-modal button {
+        margin: 10px;
+        padding: 5px 10px;
+    }
+    #rejectBtn{
+        background-color: #af4e4c; 
+    }
+    #rejectBtn:hover{
+        background-color: #974342; 
+    }
+    /* Success Popup */
+    .success-message {
+        font-size: 18px;
+        font-weight: bold;
+        color: green;
+    }
+    /* Success Popup */
+    .reject-message {
+        font-size: 18px;
+        font-weight: bold;
+        color: rgb(128, 28, 0);
+    }
+    .close-btn{
+        text-align: end;
+    }
+    .close-btn:hover{
+        cursor: pointer;
+    }
+    .popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .popup-content {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 400px;
+        position: relative;
+        text-align: center;
+    }
+    .popup h2{
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+    }
+</style>
+<body>
+    <div id="confirmationModal" class="confirmmodal">
+        <div class="close-btn" onclick="closePopup()">X</div>
+        <p>Accept request?</p>
+        <button id="rejectBtn" onclick="submitRejectRequest()">Reject</button>
+        <button id="acceptBtn" onclick="submitAcceptRequest()">Accept</button>
+    </div>
+    <!-- Success modal -->
+    <div id="success-popup" class="popup">
+        <div class="popup-content">
+            <p class="success-message">Request has been sent!</p>
+        </div>
+    </div>
+    
+    <!-- Rejected modal -->
+    <div id="reject-popup" class="popup">
+        <div class="popup-content">
+            <p class="reject-message">Request has been rejected</p>
+        </div>
+    </div>
+    <section>
+        <header class="navig">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+                <h1>TradeSphere</h1>
+            </div>
+            <nav>
+                <ul class="navbar">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="{{ url_for('trade') }}">Trade</a></li>
+                
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-link">Markets</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('solar') }}">Solar</a></li>
+                            <li><a href="{{ url_for('wind') }}">Wind</a></li>
+                            <li><a href="{{ url_for('biogas') }}">Biogas</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-link">Clients</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Corporate</a></li>
+                            <li><a href="#">Residential</a></li>
+                            <li><a href="#">Industrial</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                </ul>
+            </nav>
+        </header>
+    
+        <div class="container">
+            <main>
+                <div class="profile-container">
+                    <h2>User Profile</h2>
+    
+                    <div class="profile-details">
+                        <h3>Profile Details</h3>
+                        <p><strong>Name:</strong> <span id="profileName"> </span></p>
+                        <p><strong>Username:</strong> <span id="userName"> </span></p>
+                        <p><strong>Email:</strong> <span id="userEmail"> </span></p>
+                        <p><strong>Bio:</strong> <span id="profileBio"> </span></p>
+                        <p><strong>Location:</strong> <span id="profileLocation"> </span></p>
+                        <p><strong>No. of RECs:</strong> <span id="profileRECs">3</span></p>
+                        <p><strong>Watt Quantity:</strong> <span id="profileWatt">123 kWh</span></p>
+                        <p><strong>Energies Traded:</strong> <span id="profileEnergy">Solar</span></p>
+    
+                        <a href="{{ url_for('edit') }}" class="btn">Edit Profile</a>
+                        <div><a href="{{ url_for('footprint') }}" class="btn">Footprint Tracker</a></div>
+                    </div>
+                
+                    <div class="wallet-container">
+                        <h2>Paytm Wallet</h2>
+                        <p><strong>Wallet Balance:</strong> <span id="walletBalance">0</span> INR</p>
+                        <label for="walletAmount">Enter Amount:</label>
+                        <input type="number" id="walletAmount" placeholder="Enter amount" min="1">
+                        <button id="useWallet" class="btn">Use Wallet</button>
+                        <button id="addMoney" class="btn secondary">Add Money</button>
+                    </div>
+                <div class="order-container">
+                    <h2>Your Orders</h2>
+                    <button id="filterBtn">Filter Orders</button>
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Energy Type</th>
+                                <th>Quantity</th>
+                                <th>Total Amount(INR)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>#ORD12345</td><td>Wind</td><td>34</td><td>2040</td><td>Pending</td></tr>
+                            <tr><td>#ORD12346</td><td>Wind</td><td>200</td><td>4000</td><td>Pending</td></tr>
+                            <tr><td>#ORD12347</td><td>Hydro</td><td>50</td><td>1000</td><td>In Progress</td></tr>
+                            <tr><td>#ORD12348</td><td>Biogas</td><td>100</td><td>2000</td><td>Cancelled</td></tr>
+                            <tr><td>#ORD12349</td><td>Solar</td><td>300</td><td>6000</td><td>Completed</td></tr>
+                            <tr><td>#ORD12350</td><td>Solar</td><td>75</td><td>1500</td><td>Pending</td></tr>
+                            <tr><td>#ORD12351</td><td>Solar</td><td>120</td><td>2500</td><td>Completed</td></tr>
+                            <tr><td>#ORD12351</td><td>Wind</td><td>120</td><td>2500</td><td>Completed</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="chart-container">
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                    
+                </div>
+                <div class="order-container">
+                    <h2>Your Transactions</h2>
+                    <table class="orders-table" id="transactionsTable">
+                        <thead>
+                            <tr>
+                                <th>RECID</th>
+                                <th>Date</th>
+                                <th>Energy Type</th>
+                                <th>Quantity</th>
+                                <th>Total Amount(INR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>#REC12345</td><td>2025-02-09</td><td>Solar</td><td>100</td><td>2040</td></tr>
+                            <tr><td>#REC12346</td><td>2025-02-08</td><td>Solar</td><td>200</td><td>4500</td></tr>
+                            <tr><td>#REC12347</td><td>2025-02-07</td><td>Solar</td><td>150</td><td>3500</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    
+       
+    
+        <div id="filterModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Filter Orders</h3>
+    
+                <div class="radio-group">
+                    <h4>Energy Type:</h4>
+                    <label><input type="checkbox" name="energyType" value="Solar"> Solar</label><br>
+                    <label><input type="checkbox" name="energyType" value="Wind"> Wind</label><br>
+                    <label><input type="checkbox" name="energyType" value="Biogas"> Biogas</label><br>
+                    <label><input type="checkbox" name="energyType" value="All" checked> All</label>
+                </div>
+    
+                <div class="radio-group">
+                    <h4>Status:</h4>
+                    <label><input type="checkbox" name="status" value="Completed"> Completed</label><br>
+                    <label><input type="checkbox" name="status" value="Pending"> Pending</label><br>
+                    <label><input type="checkbox" name="status" value="In Progress"> In Progress</label><br>
+                    <label><input type="checkbox" name="status" value="Cancelled"> Cancelled</label><br>
+                    <label><input type="checkbox" name="status" value="All" checked> All</label>
+                </div>
+    
+                <button id="applyFilterBtn">Apply Filter</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    // Set profile details from localStorage
+    document.getElementById('profileName').textContent = localStorage.getItem('profileName') || 'Not set';
+    document.getElementById('profileBio').textContent = localStorage.getItem('profileBio') || 'Not set';
+    document.getElementById('profileLocation').textContent = localStorage.getItem('profileLocation') || 'Not set';
+
+    const modal = document.getElementById("confirmationModal");
+    const confirmationModal = document.getElementById("confirmationModal");
+    const acceptBtn = document.getElementById("acceptBtn");
+    const rejectBtn = document.getElementById("rejectBtn");
+    let selectedRow = null;
+
+    // Handle transaction table clicks
+    document.querySelectorAll("#transactionsTable tbody tr").forEach(row => {
+        row.addEventListener("click", function (event) {
+            if (event.target.tagName === "TD") {
+                selectedRow = this;
+                confirmationModal.style.display = "block";
+            }
+        });
+    });
+
+    // Accept transaction
+    acceptBtn.addEventListener("click", function () {
+        if (selectedRow) {
+            selectedRow.remove();
+        }
+        confirmationModal.style.display = "none";
+    });
+
+    // Reject transaction
+    rejectBtn.addEventListener("click", function () {
+        if (selectedRow) {
+            selectedRow.remove();
+        }
+        confirmationModal.style.display = "none";
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+
+    // Get user data from localStorage
+    const email = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
+
+    // Display the email and name in the profile section
+    document.getElementById('userEmail').textContent = email;
+    document.getElementById('userName').textContent = userName;
+
+    // Generate order chart
+    generateChart();
+
+    function generateChart() {
+        const table = document.getElementById('ordersTable');
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        const statusCounts = {};
+        const totalOrders = rows.length;
+
+        for (let row of rows) {
+            let status = row.cells[4].innerText.trim();
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+        }
+
+        const labels = Object.keys(statusCounts);
+        const data = Object.values(statusCounts);
+
+        const ctx = document.getElementById('ordersChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#36A2EB', '#FFCE56', '#FF6384', 'green'],
+                    hoverOffset: 10
+                }]
+            }
+        });
+    }
+
+    // Wallet functionality
+    let walletBalanceElement = document.getElementById("walletBalance");
+    let addMoneyButton = document.getElementById("addMoney");
+    let useWalletButton = document.getElementById("useWallet");
+    let walletAmountInput = document.getElementById("walletAmount");
+
+    let walletBalance = parseInt(localStorage.getItem("walletBalance") || "0");
+    walletBalanceElement.textContent = walletBalance;
+
+    // Add Money to Wallet
+    addMoneyButton.addEventListener("click", function () {
+        let amountToAdd = parseInt(walletAmountInput.value);
+
+        if (isNaN(amountToAdd) || amountToAdd <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        walletBalance += amountToAdd;
+        localStorage.setItem("walletBalance", walletBalance);
+        walletBalanceElement.textContent = walletBalance ;
+        walletAmountInput.value = "";
+    });
+
+    // Use Wallet Amount
+    useWalletButton.addEventListener("click", function () {
+        let amountToUse = parseInt(walletAmountInput.value);
+
+        if (isNaN(amountToUse) || amountToUse <= 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        if (amountToUse > walletBalance) {
+            alert("Insufficient wallet balance!");
+            return;
+        }
+
+        walletBalance -= amountToUse;
+        localStorage.setItem("walletBalance", walletBalance);
+        walletBalanceElement.textContent = walletBalance;
+        walletAmountInput.value = "";
+        alert("Amount successfully used from wallet.");
+    });
+
+    function closePopup() {
+        document.getElementById("confirmationModal").style.display = "none";
+    }
+
+
+    function submitAcceptRequest() {
+        closePopup();
+        document.getElementById("success-popup").classList.add("show");
+        setTimeout(() => {
+            document.getElementById("success-popup").classList.remove("show");
+        }, 1000);
+    }
+
+    function submitRejectRequest() {
+        closePopup(); // Close the buy popup
+        console.log("here")
+        // Show fail message
+        document.getElementById("reject-popup").style.display = "flex";
+
+        // Automatically close fail popup after a second
+        setTimeout(() => {
+            document.getElementById("reject-popup").style.display = "none";
+        }, 1000);
+    }
+        });
+
+    </script>
+      
+</body>
+</html>

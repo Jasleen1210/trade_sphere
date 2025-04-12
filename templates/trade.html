@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Surplus Energy - TradeSphere</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+    <style>
+        /* General Styles */
+        html, body {
+            height: 100%;
+            margin-bottom: 4%;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color:#7ba581;
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        /* Form Box */
+        .form-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+            width: 350px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            display: none;
+            width: 100%;
+            border-radius: 5px;
+            margin-top: 10px;
+            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Popup Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .popup.show {
+            display: block;
+        }
+
+        .popup button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .popup button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-box {
+                width: 90%;
+            }
+
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container"> 
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo">
+                <h1>TradeSphere</h1>
+            </div>
+            <nav>
+                <ul class="navbar">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="{{ url_for('trade') }}">Trade</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-link">Markets</a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('solar') }}">Solar</a></li>
+                            <li><a href="{{ url_for('wind') }}">Wind</a></li>
+                            <li><a href="{{ url_for('biogas') }}">Biogas</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    <li><a href="{{ url_for('profile') }}">My Profile</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="content">
+            <div class="form-box">
+                <h2>Trade Your Surplus Energy</h2>
+                <form id="trade-form">
+                    <label for="rec-id">REC ID:</label>
+                    <input type="text" id="rec-id" placeholder="Enter REC ID" required>
+
+                    <label for="energy-type">Select Energy Type:</label>
+                    <select id="energy-type" required>
+                        <option value="">Select</option>
+                        <option value="solar">Solar</option>
+                        <option value="wind">Wind</option>
+                        <option value="biogas">Biogas</option>
+                    </select>
+
+                    <label for="quantity">Quantity of Surplus (MWh):</label>
+                    <input type="number" id="quantity" placeholder="Enter quantity" required>
+
+                    <label for="price">Price per MWh (INR):</label>
+                    <input type="number" id="price" placeholder="Enter price per MWh" required>
+
+                    <label for="photo">Upload Verification Photo:</label>
+                    <input type="file" id="photo" accept="image/*" required>
+                    <img id="image-preview" class="image-preview">
+
+                    <button type="submit" class="btn">Submit Trade</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trade Submission Popup -->
+    <div id="trade-popup" class="popup">
+        <h3>Trade Submitted! 🎉</h3>
+        <p>Your trade has been successfully recorded.</p>
+        <button onclick="closePopup('trade-popup')">Close</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('trade-form');
+            const photoInput = document.getElementById('photo');
+            const imagePreview = document.getElementById('image-preview');
+
+            // ✅ Auto-preview the uploaded image
+            photoInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = "block";
+
+                        // 🔹 Store image in localStorage
+                        localStorage.setItem("trade_photo", e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const recId = document.getElementById('rec-id').value;
+                const energyType = document.getElementById('energy-type').value;
+                const quantity = document.getElementById('quantity').value;
+                const price = document.getElementById('price').value;
+
+                // ✅ Store data in localStorage
+                localStorage.setItem("trade_recId", recId);
+                localStorage.setItem("trade_energyType", energyType);
+                localStorage.setItem("trade_quantity", quantity);
+                localStorage.setItem("trade_price", price);
+
+                showPopup('trade-popup');
+
+                // ✅ Redirect to `web3.html` after 3 seconds
+                setTimeout(function() {
+                    closePopup('trade-popup');
+                    window.location.href = "{{ url_for('web3') }}"
+                }, 3000);
+            });
+
+            function showPopup(popupId) {
+                document.getElementById(popupId).classList.add("show");
+            }
+
+            function closePopup(popupId) {
+                document.getElementById(popupId).classList.remove("show");
+            }
+        });
+    </script>
+</body>
+</html>
